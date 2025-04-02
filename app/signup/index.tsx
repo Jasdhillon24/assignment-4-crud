@@ -18,16 +18,35 @@ export default function SignUpScreen() {
     });
 
     if (error) {
+      console.error('Auth error:', error.message);
       setErrorMsg(error.message);
-    } else {
-      await supabase.from('user_details').insert({
-        uuid: data.user?.id,
-        email,
+      return;
+    }
+
+    const {
+      data: { session },
+    } = await supabase.auth.getSession();
+
+    if (!session || !session.user) {
+      setErrorMsg('Please verify your email or try again.');
+      return;
+    }
+
+    const { error: insertError } = await supabase.from('user_details').insert([
+      {
+        uuid: session.user.id,         // ✅ required for RLS
+        email: email,
         first_name: firstName,
         last_name: lastName,
-      });
+      },
+    ]);
 
-      router.replace('/');
+    if (insertError) {
+      console.error('Insert error:', insertError.message);
+      setErrorMsg('Failed to save user details.');
+    } else {
+      console.log('✅ User details saved!');
+      router.replace('/landing');
     }
   };
 
@@ -52,6 +71,7 @@ export default function SignUpScreen() {
         placeholderTextColor="gray"
         onChangeText={setEmail}
         value={email}
+        autoCapitalize="none"
         style={{ marginBottom: 10, color: 'white' }}
       />
       <TextInput
@@ -64,7 +84,9 @@ export default function SignUpScreen() {
       />
       <Button title="Sign Up" onPress={handleSignUp} />
       <Button title="Go to Sign In" onPress={() => router.replace('/signin')} />
-      {errorMsg ? <Text style={{ color: 'red' }}>{errorMsg}</Text> : null}
+      {errorMsg ? (
+        <Text style={{ color: 'red', marginTop: 10 }}>{errorMsg}</Text>
+      ) : null}
     </View>
   );
 }

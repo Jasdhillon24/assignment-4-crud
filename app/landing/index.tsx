@@ -4,30 +4,35 @@ import { useEffect, useState } from 'react';
 import { supabase } from '@/lib/supabase';
 
 export default function LandingScreen() {
-  const [userFullName, setUserFullName] = useState('');
   const router = useRouter();
+  const [userFullName, setUserFullName] = useState('');
 
   useEffect(() => {
-    const fetchUserData = async () => {
-      const { data: { session } } = await supabase.auth.getSession();
-      if (!session) {
-        router.replace('/signin');
-      } else {
-        const { data, error } = await supabase
-          .from('user_details')
-          .select('first_name, last_name')
-          .eq('uuid', session.user.id)
-          .single();
+    const fetchUserDetails = async () => {
+      const { data: sessionData, error: sessionError } = await supabase.auth.getSession();
 
-        if (error) {
-          console.error('Error fetching full name:', error);
-        } else {
-          setUserFullName(`${data.first_name} ${data.last_name}`);
-        }
+      if (sessionError || !sessionData.session) {
+        router.replace('/signin');
+        return;
+      }
+
+      const userId = sessionData.session.user.id;
+
+      const { data, error } = await supabase
+        .from('user_details')
+        .select('first_name, last_name')
+        .eq('uuid', userId)
+        .single();
+
+      if (error) {
+        console.error('Error fetching user details:', error.message);
+        setUserFullName('(Name not found)');
+      } else {
+        setUserFullName(`${data.first_name} ${data.last_name}`);
       }
     };
 
-    fetchUserData();
+    fetchUserDetails();
   }, []);
 
   const handleLogout = async () => {
@@ -36,8 +41,8 @@ export default function LandingScreen() {
   };
 
   return (
-    <View style={{ flex: 1, justifyContent: 'center', alignItems: 'center' }}>
-      <Text style={{ color: 'white', fontSize: 18 }}>
+    <View style={{ flex: 1, justifyContent: 'center', alignItems: 'center', padding: 20 }}>
+      <Text style={{ color: 'white', fontSize: 18, marginBottom: 10 }}>
         Welcome, {userFullName}
       </Text>
       <Button title="Logout" onPress={handleLogout} />

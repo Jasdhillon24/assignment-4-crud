@@ -10,11 +10,13 @@ export default function SignInScreen() {
   const [errorMsg, setErrorMsg] = useState('');
 
   const handleSignIn = async () => {
-    const { error } = await supabase.auth.signInWithPassword({ email, password });
+    const { data, error } = await supabase.auth.signInWithPassword({ email, password });
+
     if (error) {
-      setErrorMsg(error.message);
-    } else {
-      router.replace('/');
+      console.error('Sign-in error:', error.message);
+      setErrorMsg('Invalid email or password');
+    } else if (data.session) {
+      router.replace('/landing');
     }
   };
 
@@ -23,9 +25,16 @@ export default function SignInScreen() {
       <TextInput
         placeholder="Email"
         placeholderTextColor="gray"
+        autoCapitalize="none"
+        keyboardType="email-address"
         onChangeText={setEmail}
         value={email}
-        style={{ marginBottom: 10, color: 'white' }} // 👈 Add color
+        style={{
+          marginBottom: 10,
+          color: 'white',
+          borderBottomWidth: 1,
+          borderColor: 'gray',
+        }}
       />
       <TextInput
         placeholder="Password"
@@ -33,11 +42,18 @@ export default function SignInScreen() {
         secureTextEntry
         onChangeText={setPassword}
         value={password}
-        style={{ marginBottom: 10, color: 'white' }} // 👈 Add color
+        style={{
+          marginBottom: 10,
+          color: 'white',
+          borderBottomWidth: 1,
+          borderColor: 'gray',
+        }}
       />
       <Button title="Sign In" onPress={handleSignIn} />
-      <Button title="Go to Sign Up" onPress={() => router.push('/signup')} />
-      {errorMsg ? <Text style={{ color: 'red' }}>{errorMsg}</Text> : null}
+      <View style={{ marginTop: 10 }}>
+        <Button title="Go to Sign Up" onPress={() => router.push('/signup')} />
+      </View>
+      {errorMsg ? <Text style={{ color: 'red', marginTop: 10 }}>{errorMsg}</Text> : null}
     </View>
   );
 }
